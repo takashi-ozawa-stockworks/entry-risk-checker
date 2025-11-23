@@ -29,7 +29,6 @@ export default function TradeForm({ defaultTradeType = 'LONG', onCalculate, onRe
     onReset?.();
   };
 
-  // ■ 修正ポイント1: 負の入力をStateに入れない共通ハンドラ
   const handlePriceChange = (value: string, setter: (val: number | '') => void) => {
     if (value === '') {
       setter('');
@@ -37,14 +36,12 @@ export default function TradeForm({ defaultTradeType = 'LONG', onCalculate, onRe
       return;
     }
     const num = parseFloat(value);
-    // 0以上のみ許可
     if (!isNaN(num) && num >= 0) {
       setter(num);
       setError(null);
     }
   };
 
-  // ■ 修正ポイント2: マイナスキー自体の入力を無効化
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === '-' || e.key === 'e' || e.key === 'E') {
       e.preventDefault();
@@ -52,7 +49,6 @@ export default function TradeForm({ defaultTradeType = 'LONG', onCalculate, onRe
   };
 
   const validate = (): boolean => {
-    // ■ 修正ポイント3: バリデーションでも「0より大きい」ことをチェック
     if (entryPrice === '' || entryPrice <= 0) {
       setError('エントリー価格には正の値を入力してください');
       return false;
@@ -107,6 +103,9 @@ export default function TradeForm({ defaultTradeType = 'LONG', onCalculate, onRe
     onCalculate(input);
   };
 
+  // スマホ対策用の共通クラス: text-gray-900とopacity-100を追加
+  const inputBaseClass = "w-full border border-gray-300 rounded-lg px-4 py-3 text-lg font-mono shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition text-gray-900 opacity-100 placeholder:text-gray-300";
+
   return (
     <section className="w-full space-y-6">
       {/* 1. BUY/SELL Toggle */}
@@ -144,8 +143,8 @@ export default function TradeForm({ defaultTradeType = 'LONG', onCalculate, onRe
           <input
             type="number"
             inputMode="decimal"
-            min="0" // ブラウザ標準のUI制御
-            className="w-full border border-gray-300 rounded-lg px-4 py-3 text-lg font-mono shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition"
+            min="0"
+            className={inputBaseClass}
             value={entryPrice}
             onChange={(e) => handlePriceChange(e.target.value, setEntryPrice)}
             onKeyDown={handleKeyDown}
@@ -164,7 +163,7 @@ export default function TradeForm({ defaultTradeType = 'LONG', onCalculate, onRe
             type="number"
             inputMode="decimal"
             min="0"
-            className="w-full border border-red-200 bg-red-50/30 rounded-lg px-3 py-3 font-mono focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition"
+            className={`${inputBaseClass} border-red-200 bg-red-50/30 focus:ring-red-500 focus:border-red-500`}
             value={stopPrice}
             onChange={(e) => handlePriceChange(e.target.value, setStopPrice)}
             onKeyDown={handleKeyDown}
@@ -179,7 +178,7 @@ export default function TradeForm({ defaultTradeType = 'LONG', onCalculate, onRe
             type="number"
             inputMode="decimal"
             min="0"
-            className="w-full border border-green-200 bg-green-50/30 rounded-lg px-3 py-3 font-mono focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+            className={`${inputBaseClass} border-green-200 bg-green-50/30 focus:ring-green-500 focus:border-green-500`}
             value={takePrice}
             onChange={(e) => handlePriceChange(e.target.value, setTakePrice)}
             onKeyDown={handleKeyDown}

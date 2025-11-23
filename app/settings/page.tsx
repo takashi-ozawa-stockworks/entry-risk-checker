@@ -6,7 +6,7 @@ import { Settings, ChevronLeft, Save } from 'lucide-react';
 import { useRiskSettings } from '@/hooks/useRiskSettings';
 import { RiskSettings } from '@/lib/types';
 
-// 入力フィールド用のコンポーネント（単位表示に対応）
+// 入力フィールド用のコンポーネント
 const FieldRow = ({
   label,
   hint,
@@ -27,7 +27,6 @@ const FieldRow = ({
     
     <div className="relative">
       {children}
-      {/* 単位がある場合は右端に表示 */}
       {unit && (
         <div className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400 pointer-events-none">
           {unit}
@@ -42,40 +41,68 @@ const FieldRow = ({
   </div>
 );
 
+// フォーム用の型定義（入力中は空文字を許容するため）
+type SettingsFormState = {
+  [K in keyof RiskSettings]: number | '';
+};
+
 export default function SettingsPage() {
   const router = useRouter();
   const { settings, save } = useRiskSettings();
 
-  const [form, setForm] = useState<RiskSettings>({
-    accountBalance: 100000,
-    riskPercentage: 2,
-    pipsValuePerLot: 1000,
-    minLot: 0.01,
-    lotStep: 0.01,
-    minRiskRewardRatio: 1.5,
+  // 初期値
+  const [form, setForm] = useState<SettingsFormState>({
+    accountBalance: '',
+    riskPercentage: '',
+    pipsValuePerLot: '',
+    minLot: '',
+    lotStep: '',
+    minRiskRewardRatio: '',
   });
 
   const [errors, setErrors] = useState<Record<string, string | null>>({});
 
+  // 設定読み込み時にフォームに反映
   useEffect(() => {
     if (settings) {
       setForm({ ...settings });
     }
   }, [settings]);
 
-  const onChange = <K extends keyof RiskSettings>(key: K, value: number) => {
-    setForm((s) => ({ ...s, [key]: value }));
+  // 入力ハンドラ（空文字を許容し、0になるのを防ぐ）
+  const handleChange = <K extends keyof SettingsFormState>(key: K, value: string) => {
+    // エラーをリセット
     setErrors((e) => ({ ...e, [key]: null }));
+
+    if (value === '') {
+      setForm((s) => ({ ...s, [key]: '' }));
+      return;
+    }
+
+    const num = parseFloat(value);
+    // 0以上のみ許可
+    if (!isNaN(num) && num >= 0) {
+      setForm((s) => ({ ...s, [key]: num }));
+    }
+  };
+
+  // マイナスキー自体の入力を無効化
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === '-' || e.key === 'e' || e.key === 'E') {
+      e.preventDefault();
+    }
   };
 
   const validate = (): boolean => {
     const next: Record<string, string | null> = {};
-    if (!(form.accountBalance > 0)) next.accountBalance = '0より大きい値を入力';
-    if (!(form.riskPercentage > 0 && form.riskPercentage <= 100)) next.riskPercentage = '0〜100の間で入力';
-    if (!(form.pipsValuePerLot > 0)) next.pipsValuePerLot = '正の値を入力';
-    if (!(form.minLot > 0)) next.minLot = '正の値を入力';
-    if (!(form.lotStep > 0)) next.lotStep = '正の値を入力';
-    if (!(form.minRiskRewardRatio > 0)) next.minRiskRewardRatio = '正の値を入力';
+    
+    // 値が空文字、または0以下の場合にエラー
+    if (form.accountBalance === '' || form.accountBalance <= 0) next.accountBalance = '正の値を入力してください';
+    if (form.riskPercentage === '' || form.riskPercentage <= 0 || form.riskPercentage > 100) next.riskPercentage = '0〜100の間で入力してください';
+    if (form.pipsValuePerLot === '' || form.pipsValuePerLot <= 0) next.pipsValuePerLot = '正の値を入力してください';
+    if (form.minLot === '' || form.minLot <= 0) next.minLot = '正の値を入力してください';
+    if (form.lotStep === '' || form.lotStep <= 0) next.lotStep = '正の値を入力してください';
+    if (form.minRiskRewardRatio === '' || form.minRiskRewardRatio <= 0) next.minRiskRewardRatio = '正の値を入力してください';
 
     setErrors(next);
     return !Object.values(next).some(Boolean);
@@ -84,8 +111,8 @@ export default function SettingsPage() {
   const handleSave = () => {
     if (!validate()) return;
     try {
-      save(form);
-      // アラートの代わりに少し待ってから戻るなどのUXも考えられますが、今回はシンプルに
+      // 保存時は number 型にキャスト（バリデーション済みなので安全）
+      save(form as RiskSettings);
       router.back();
     } catch (e) {
       console.error(e);
@@ -93,13 +120,11 @@ export default function SettingsPage() {
     }
   };
 
-  // 共通のInputスタイル
-  const inputClass = "w-full border border-gray-200 bg-gray-50/50 rounded-xl px-4 py-3 text-lg font-mono shadow-sm focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition";
+  // 共通Inputスタイル（スマホ対策：text-gray-900, opacity-100 を明示）
+  const inputClass = "w-full border border-gray-200 bg-gray-50/50 rounded-xl px-4 py-3 text-lg font-mono shadow-sm focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition text-gray-900 opacity-100 placeholder:text-gray-300";
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-32"> {/* 全体の背景色をグレーに */}
-      
-      {/* ヘッダーエリア */}
+    <div className="min-h-screen bg-gray-50 pb-32">
       <header className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-gray-200 px-4 py-3 flex items-center justify-between mb-6">
         <button
           onClick={() => router.back()}
@@ -108,128 +133,112 @@ export default function SettingsPage() {
           <ChevronLeft size={24} />
         </button>
         <h1 className="text-base font-bold text-gray-900">リスク設定</h1>
-        <div className="w-10" /> {/* レイアウト調整用のダミー */}
+        <div className="w-10" />
       </header>
 
       <div className="max-w-lg mx-auto px-4">
-        
-        {/* フォームエリア：白いカードで囲む */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-8">
           
-          {/* セクション1: 資金設定 */}
           <div className="space-y-6">
             <div className="flex items-center gap-2 text-indigo-600 border-b border-indigo-100 pb-2 mb-4">
               <Settings size={18} />
               <span className="text-xs font-bold uppercase tracking-wider">基本設定</span>
             </div>
 
-            <FieldRow
-              label="口座残高"
-              hint="現在の有効証拠金を入力"
-              unit="JPY"
-              error={errors.accountBalance}
-            >
+            <FieldRow label="口座残高" hint="現在の有効証拠金を入力" unit="JPY" error={errors.accountBalance}>
               <input
                 type="number"
                 inputMode="decimal"
+                min="0"
                 className={inputClass}
                 value={form.accountBalance}
-                onChange={(e) => onChange('accountBalance', Number(e.target.value))}
+                onChange={(e) => handleChange('accountBalance', e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="100000"
               />
             </FieldRow>
 
-            <FieldRow
-              label="許容リスク"
-              hint="1トレードあたりの最大損失率"
-              unit="%"
-              error={errors.riskPercentage}
-            >
+            <FieldRow label="許容リスク" hint="1トレードあたりの最大損失率" unit="%" error={errors.riskPercentage}>
               <input
                 type="number"
                 inputMode="decimal"
                 step="0.1"
+                min="0"
                 className={inputClass}
                 value={form.riskPercentage}
-                onChange={(e) => onChange('riskPercentage', Number(e.target.value))}
+                onChange={(e) => handleChange('riskPercentage', e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="2.0"
               />
             </FieldRow>
           </div>
 
-          {/* セクション2: ロット・計算設定 */}
           <div className="space-y-6">
             <div className="flex items-center gap-2 text-gray-400 border-b border-gray-100 pb-2 mb-4 pt-2">
               <span className="text-xs font-bold uppercase tracking-wider">詳細パラメータ</span>
             </div>
 
-            <FieldRow
-              label="1pips損益 (1Lot)"
-              hint="USD/JPY等のクロス円は通常1000"
-              unit="円"
-              error={errors.pipsValuePerLot}
-            >
+            <FieldRow label="1pips損益 (1Lot)" hint="USD/JPY等のクロス円は通常1000" unit="円" error={errors.pipsValuePerLot}>
               <input
                 type="number"
                 inputMode="decimal"
+                min="0"
                 className={inputClass}
                 value={form.pipsValuePerLot}
-                onChange={(e) => onChange('pipsValuePerLot', Number(e.target.value))}
+                onChange={(e) => handleChange('pipsValuePerLot', e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="1000"
               />
             </FieldRow>
 
             <div className="grid grid-cols-2 gap-4">
-              <FieldRow
-                label="最小ロット"
-                unit="Lot"
-                error={errors.minLot}
-              >
+              <FieldRow label="最小ロット" unit="Lot" error={errors.minLot}>
                 <input
                   type="number"
                   inputMode="decimal"
                   step="0.01"
+                  min="0"
                   className={inputClass}
                   value={form.minLot}
-                  onChange={(e) => onChange('minLot', Number(e.target.value))}
+                  onChange={(e) => handleChange('minLot', e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="0.01"
                 />
               </FieldRow>
 
-              <FieldRow
-                label="ロット刻み"
-                unit="Lot"
-                error={errors.lotStep}
-              >
+              <FieldRow label="ロット刻み" unit="Lot" error={errors.lotStep}>
                 <input
                   type="number"
                   inputMode="decimal"
                   step="0.01"
+                  min="0"
                   className={inputClass}
                   value={form.lotStep}
-                  onChange={(e) => onChange('lotStep', Number(e.target.value))}
+                  onChange={(e) => handleChange('lotStep', e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="0.01"
                 />
               </FieldRow>
             </div>
 
-            <FieldRow
-              label="最低リスクリワード"
-              hint="これ未満のエントリーは警告が出ます"
-              unit="RR"
-              error={errors.minRiskRewardRatio}
-            >
+            <FieldRow label="最低リスクリワード" hint="これ未満のエントリーは警告が出ます" unit="RR" error={errors.minRiskRewardRatio}>
               <input
                 type="number"
                 inputMode="decimal"
                 step="0.1"
+                min="0"
                 className={inputClass}
                 value={form.minRiskRewardRatio}
-                onChange={(e) => onChange('minRiskRewardRatio', Number(e.target.value))}
+                onChange={(e) => handleChange('minRiskRewardRatio', e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="1.5"
               />
             </FieldRow>
           </div>
-
         </div>
       </div>
 
-      {/* 固定フッターボタン */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur border-t border-gray-200">
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur border-t border-gray-200 safe-area-bottom">
         <div className="max-w-lg mx-auto">
           <button
             onClick={handleSave}
