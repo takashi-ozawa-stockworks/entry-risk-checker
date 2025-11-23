@@ -59,7 +59,7 @@ export default function ResultCard({ result }: { result: CalculationResult }) {
         <div className="grid grid-cols-2 gap-3 mb-6">
           {/* RR表示 */}
           <div className="bg-white/40 p-2 rounded text-center">
-            <div className="text-sm text-gray-500 mb-1">リスクリワード (RR)</div>
+            <div className="text-sm text-gray-500 mb-1">リスクリワード</div>
             <div className={`font-mono font-bold text-lg ${isRRLow ? 'text-red-600' : 'text-gray-700'}`}>
               1 : {result.riskRewardRatio.toFixed(2)}
             </div>
