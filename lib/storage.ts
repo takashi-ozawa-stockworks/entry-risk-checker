@@ -1,5 +1,5 @@
-import { STORAGE_KEY } from "./constants";
-import { RiskSettings } from "./types";
+import { STORAGE_KEY, TRADE_HISTORY_KEY } from "./constants";
+import { RiskSettings, TradeNote } from "./types";
 
 const isBrowser = typeof window !== "undefined";
 
@@ -90,5 +90,41 @@ export const clearRiskSettings = (): void => {
     window.localStorage.removeItem(STORAGE_KEY);
   } catch (error) {
     console.error("Failed to clear risk settings", error);
+  }
+};
+
+export const getTradeHistory = (): TradeNote[] => {
+  if (!isBrowser) return [];
+
+  try {
+    const raw = window.localStorage.getItem(TRADE_HISTORY_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (error) {
+    console.error("Failed to read trade history", error);
+    return [];
+  }
+};
+
+export const saveTradeNote = (note: TradeNote): void => {
+  if (!isBrowser) return;
+
+  try {
+    const history = getTradeHistory();
+    const newHistory = [note, ...history].slice(0, 100); // 最新100件まで保存
+    window.localStorage.setItem(TRADE_HISTORY_KEY, JSON.stringify(newHistory));
+  } catch (error) {
+    console.error("Failed to save trade note", error);
+  }
+};
+
+export const deleteTradeNote = (id: string): void => {
+  if (!isBrowser) return;
+
+  try {
+    const history = getTradeHistory();
+    const newHistory = history.filter((note) => note.id !== id);
+    window.localStorage.setItem(TRADE_HISTORY_KEY, JSON.stringify(newHistory));
+  } catch (error) {
+    console.error("Failed to delete trade note", error);
   }
 };

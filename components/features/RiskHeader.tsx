@@ -1,8 +1,12 @@
-import Link from 'next/link';
-import { Settings, Wallet, PieChart, TrendingUp } from 'lucide-react';
-import { RiskSettings } from '@/lib/types';
+import Link from "next/link";
+import { Settings, Wallet, PieChart, TrendingUp, History } from "lucide-react";
+import { RiskSettings } from "@/lib/types";
 
-export default function RiskHeader({ settings }: { settings: RiskSettings | null }) {
+export default function RiskHeader({
+  settings,
+}: {
+  settings: RiskSettings | null;
+}) {
   const formatYen = (v: number) => `¥${v.toLocaleString()}`;
 
   return (
@@ -10,17 +14,30 @@ export default function RiskHeader({ settings }: { settings: RiskSettings | null
       {/* 上段：タイトルと設定ボタン */}
       <div className="flex items-center justify-between mb-3">
         <div>
-          <h1 className="text-xl font-bold text-gray-900 tracking-tight">Entry Risk Checker</h1>
-          <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">資金管理 & エントリ判定ツール</p>
+          <h1 className="text-xl font-bold text-gray-900 tracking-tight">
+            Entry Risk Checker
+          </h1>
+          <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">
+            資金管理 & エントリ判定ツール
+          </p>
         </div>
 
-        <Link 
-          href="/settings" 
-          className="p-2.5 rounded-full bg-white text-gray-500 hover:bg-gray-100 hover:text-gray-800 transition border border-gray-200 shadow-sm active:scale-95" 
-          aria-label="設定"
-        >
-          <Settings size={20} strokeWidth={2} />
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/history"
+            className="p-2.5 rounded-full bg-white text-gray-500 hover:bg-gray-100 hover:text-gray-800 transition border border-gray-200 shadow-sm active:scale-95"
+            aria-label="履歴"
+          >
+            <History size={20} strokeWidth={2} />
+          </Link>
+          <Link
+            href="/settings"
+            className="p-2.5 rounded-full bg-white text-gray-500 hover:bg-gray-100 hover:text-gray-800 transition border border-gray-200 shadow-sm active:scale-95"
+            aria-label="設定"
+          >
+            <Settings size={20} strokeWidth={2} />
+          </Link>
+        </div>
       </div>
 
       {/* 下段：設定値サマリー（チップ表示） */}
@@ -32,7 +49,9 @@ export default function RiskHeader({ settings }: { settings: RiskSettings | null
               <Wallet size={14} className="text-blue-500" />
               <div className="text-xs font-medium">
                 <span className="text-blue-400 text-[10px] mr-1">残高</span>
-                <span className="font-mono font-bold text-sm">{formatYen(settings.accountBalance)}</span>
+                <span className="font-mono font-bold text-sm">
+                  {formatYen(settings.accountBalance)}
+                </span>
               </div>
             </div>
 
@@ -41,7 +60,9 @@ export default function RiskHeader({ settings }: { settings: RiskSettings | null
               <PieChart size={14} className="text-purple-500" />
               <div className="text-xs font-medium">
                 <span className="text-purple-400 text-[10px] mr-1">許容</span>
-                <span className="font-mono font-bold text-sm">{settings.riskPercentage}%</span>
+                <span className="font-mono font-bold text-sm">
+                  {settings.riskPercentage}%
+                </span>
               </div>
             </div>
 
@@ -50,7 +71,9 @@ export default function RiskHeader({ settings }: { settings: RiskSettings | null
               <TrendingUp size={14} className="text-orange-500" />
               <div className="text-xs font-medium">
                 <span className="text-orange-400 text-[10px] mr-1">RR</span>
-                <span className="font-mono font-bold text-sm">1:{settings.minRiskRewardRatio}</span>
+                <span className="font-mono font-bold text-sm">
+                  1:{settings.minRiskRewardRatio}
+                </span>
               </div>
             </div>
           </>

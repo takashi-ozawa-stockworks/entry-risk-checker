@@ -1,4 +1,4 @@
-import { RiskSettings } from './types';
+import { RiskSettings } from "./types";
 
 // 初期設定のデフォルト値
 export const DEFAULT_SETTINGS: RiskSettings = {
@@ -11,7 +11,8 @@ export const DEFAULT_SETTINGS: RiskSettings = {
 };
 
 // LocalStorageのキー
-export const STORAGE_KEY = 'entry_risk_checker_settings';
+export const STORAGE_KEY = "entry_risk_checker_settings";
+export const TRADE_HISTORY_KEY = "entry_risk_checker_history";
 
 // USD/JPYにおけるpips計算用係数 (1pips = 0.01円)
 export const JPY_PIPS_MULTIPLIER = 100;
