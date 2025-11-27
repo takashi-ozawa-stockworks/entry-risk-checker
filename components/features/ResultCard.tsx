@@ -70,7 +70,7 @@ export default function ResultCard({ result }: { result: CalculationResult }) {
         <div className="grid grid-cols-2 gap-3 mb-6">
           {/* RR表示 */}
           <div className="bg-white/40 p-2 rounded text-center">
-            <div className="text-sm text-gray-500 mb-1">リスクリワード</div>
+            <div className="text-sm text-gray-500 mb-1">リスクリワード比</div>
             <div
               className={`font-mono font-bold text-lg ${
                 isRRLow ? "text-red-600" : "text-gray-700"
@@ -80,11 +80,20 @@ export default function ResultCard({ result }: { result: CalculationResult }) {
             </div>
           </div>
 
+          {/* 損切り幅 & 利確幅 */}
+          <div className="bg-white/40 p-2 rounded text-center">
+            <div className="text-sm text-gray-500 mb-1">SL幅 : TP幅</div>
+            <div className="font-mono font-bold text-lg text-gray-700">
+              {result.stopPips}{" : "}{result.takePips}
+              <span className="text-xs font-normal">(pips)</span>
+            </div>
+          </div>
+
           {/* 損失リスク表示 */}
           <div className="bg-white/40 p-2 rounded text-center">
             <div className="text-sm text-gray-500 mb-1">想定損失</div>
             <div className="flex items-baseline justify-center gap-1">
-              <div className="font-mono font-bold text-lg text-gray-700">
+              <div className="font-mono font-bold text-lg text-red-600">
                 {formatYen(result.actualLoss)}
               </div>
               <div
@@ -99,25 +108,12 @@ export default function ResultCard({ result }: { result: CalculationResult }) {
             </div>
           </div>
 
-          {/* 損切り幅 */}
+          {/* 想定利益 */}
           <div className="bg-white/40 p-2 rounded text-center">
-            <div className="text-sm text-gray-500 mb-1">損切り幅</div>
-            <div className="font-mono font-bold text-lg text-gray-700">
-              {result.stopPips}{" "}
-              <span className="text-xs font-normal">pips</span>
-            </div>
-          </div>
-
-          {/* 利確幅 & 想定利益 */}
-          <div className="bg-white/40 p-2 rounded text-center">
-            <div className="text-sm text-gray-500 mb-1">利確幅 (想定利益)</div>
+            <div className="text-sm text-gray-500 mb-1">想定利益</div>
             <div className="flex items-baseline justify-center gap-1">
-              <div className="font-mono font-bold text-lg text-gray-700">
-                {result.takePips}{" "}
-                <span className="text-xs font-normal">pips</span>
-              </div>
-              <div className="text-xs font-bold text-green-600">
-                ({formatYen(result.potentialProfit)})
+              <div className="font-mono text-lg font-bold text-green-600">
+                {formatYen(result.potentialProfit)}
               </div>
             </div>
           </div>

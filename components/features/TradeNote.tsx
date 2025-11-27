@@ -1,4 +1,7 @@
+"use client";
+
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Save, Check, FileText } from "lucide-react";
 import {
   TradeInput,
@@ -15,6 +18,8 @@ interface Props {
 
 export default function TradeNote({ input, result }: Props) {
   const [saved, setSaved] = useState(false);
+
+  const router = useRouter();
 
   // 価格の計算 (PIPSモードの場合に対応)
   const getPrice = (
@@ -53,8 +58,9 @@ export default function TradeNote({ input, result }: Props) {
   );
 
   const handleSave = () => {
+    const id = crypto.randomUUID();
     const newNote: TradeNoteType = {
-      id: crypto.randomUUID(),
+      id,
       timestamp: Date.now(),
       tradeType: input.tradeType,
       entryPrice: input.entryPrice,
@@ -62,12 +68,14 @@ export default function TradeNote({ input, result }: Props) {
       takeProfitPrice: tpPrice,
       actualLoss: result.actualLoss,
       potentialProfit: result.potentialProfit,
+      stopPips: result.stopPips,
+      takePips: result.takePips,
       riskRewardRatio: result.riskRewardRatio,
       note: "", // ノート機能は削除されたため空文字
     };
     saveTradeNote(newNote);
     setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    router.push(`/history/${id}`);
   };
 
   return (
@@ -81,8 +89,8 @@ export default function TradeNote({ input, result }: Props) {
         {/* プレビュー表示 (読み取り専用) */}
         <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 text-sm space-y-3">
           <div className="flex justify-between items-center border-b border-gray-200 pb-2">
-            <span className="text-gray-500 text-xs font-bold">日時</span>
-            <span className="font-mono font-medium text-gray-700">
+            <span className="text-gray-500 text-sm">日時</span>
+            <span className="font-mono text-md font-medium text-gray-700">
               {new Date().toLocaleString("ja-JP", {
                 year: "numeric",
                 month: "long",
@@ -95,57 +103,56 @@ export default function TradeNote({ input, result }: Props) {
           </div>
 
           <div className="space-y-3">
-            {/* Entry */}
-            <div className="flex items-center justify-between">
-              <span className="text-gray-500 font-medium">エントリー</span>
-              <div className="flex items-center gap-2">
-                <span className="font-mono font-bold text-lg text-gray-900">
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-gray-500">タイプ</span>
+              <span
+                className={`font-bold px-2 py-0.5 rounded text-xs ${
+                  input.tradeType === "LONG"
+                    ? "bg-blue-100 text-blue-600"
+                    : "bg-red-100 text-red-600"
+                }`}
+              >
+                {input.tradeType}
+              </span>
+            </div>
+            <div className="grid grid-cols-3 gap-2 pt-2 border-t border-gray-200">
+              <div className="text-center">
+                <div className="text-sm text-gray-500 mb-1">Entry</div>
+                <div className="font-mono text-lg font-bold text-gray-900">
                   {input.entryPrice.toFixed(3)}
-                </span>
-                <span
-                  className={`text-xs font-bold px-1.5 py-0.5 rounded ${
-                    input.tradeType === "LONG"
-                      ? "bg-red-100 text-red-600"
-                      : "bg-blue-100 text-blue-600"
-                  }`}
-                >
-                  {input.tradeType}
-                </span>
+                </div>
               </div>
-            </div>
-
-            {/* Stop Loss */}
-            <div className="flex items-center justify-between">
-              <span className="text-gray-500 font-medium">損切り</span>
-              <div className="flex items-center gap-2">
-                <span className="font-mono font-bold text-lg text-gray-900">
+              <div className="text-center">
+                <div className="text-sm text-gray-500 mb-1">SL</div>
+                <div className="font-mono text-lg font-bold text-gray-900">
                   {slPrice.toFixed(3)}
-                </span>
-                <span className="text-xs text-gray-500">
-                  (-{result.actualLoss.toLocaleString()}円)
-                </span>
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-sm text-gray-500 mb-1">TP</div>
+                <div className="font-mono text-lg font-bold text-gray-900">
+                  {tpPrice.toFixed(3)}
+                </div>
               </div>
             </div>
 
-            {/* Take Profit */}
-            <div className="flex items-center justify-between">
-              <span className="text-gray-500 font-medium">利確</span>
-              <div className="flex items-center gap-2">
-                <span className="font-mono font-bold text-lg text-gray-900">
-                  {tpPrice.toFixed(3)}
-                </span>
-                <span className="text-xs text-green-600 font-bold">
-                  (+{result.potentialProfit.toLocaleString()}円)
+            {/* 損切幅 : 利確幅 */}
+            <div className="text-center pt-2 border-t border-gray-200">
+              <div className="text-sm text-gray-500 mb-1">SL幅 : TP幅</div>
+              <div className="font-mono text-lg font-bold text-gray-900">
+                {result.stopPips} : {result.takePips}{" "}
+                <span className="text-xs font-normal text-gray-500">
+                  (pips)
                 </span>
               </div>
             </div>
 
             {/* Risk Reward */}
-            <div className="flex justify-between items-center pt-1">
-              <span className="text-gray-500 font-medium">リスクリワード</span>
-              <span className="font-mono font-bold text-lg text-gray-900">
+            <div className="text-center pt-2 border-t border-gray-200">
+              <div className="text-sm text-gray-500 mb-1">リスクリワード比</div>
+              <div className="font-mono text-lg font-bold text-gray-900">
                 1 : {result.riskRewardRatio.toFixed(2)}
-              </span>
+              </div>
             </div>
           </div>
         </div>
@@ -154,7 +161,7 @@ export default function TradeNote({ input, result }: Props) {
         <div className="pt-2">
           <button
             onClick={handleSave}
-            className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-bold text-sm shadow-sm"
+            className="w-full flex items-center justify-center gap-2 py-4 px-6 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-bold text-lg shadow-sm"
           >
             {saved ? <Check size={18} /> : <Save size={18} />}
             {saved ? "Saved!" : "Save Note"}

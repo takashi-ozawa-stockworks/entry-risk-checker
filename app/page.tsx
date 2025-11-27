@@ -41,11 +41,12 @@ export default function Page() {
 
   return (
     // 背景色を bg-white から bg-gray-50 に変更して、設定画面と統一感を出す
-    <main className="min-h-screen bg-gray-50 p-4 pb-28">
+    // 背景色を bg-white から bg-gray-50 に変更して、設定画面と統一感を出す
+    <main className="min-h-screen bg-gray-50 pb-28">
       {/* settingsがnullの場合はnullを渡してRiskHeader側でエラー表示させる */}
       <RiskHeader settings={settings} />
 
-      <div className="max-w-xl mx-auto space-y-6">
+      <div className="max-w-xl mx-auto space-y-6 px-4">
         {/* 設定がない場合のガード表示 */}
         {!settings && (
           <div className="bg-white p-8 rounded-2xl shadow-sm text-center border border-gray-100">

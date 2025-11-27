@@ -50,6 +50,11 @@ export interface TradeNote {
   takeProfitPrice: number;
   actualLoss: number; // 負け金額
   potentialProfit: number; // 勝ち金額
+  stopPips?: number; // 損切り幅(pips) - オプショナルにして既存データとの互換性を保つ
+  takePips?: number; // 利確幅(pips) - オプショナルにして既存データとの互換性を保つ
   riskRewardRatio: number;
+  scenario?: string; // シナリオ
+  entryBasis?: string; // エントリー根拠
+  tradeResult?: "WIN" | "LOSS"; // 結果
   note: string; // 反省・気づき
 }

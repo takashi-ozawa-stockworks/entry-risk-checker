@@ -128,3 +128,22 @@ export const deleteTradeNote = (id: string): void => {
     console.error("Failed to delete trade note", error);
   }
 };
+
+export const updateTradeNote = (updatedNote: TradeNote): void => {
+  if (!isBrowser) return;
+
+  try {
+    const history = getTradeHistory();
+    const newHistory = history.map((note) =>
+      note.id === updatedNote.id ? updatedNote : note
+    );
+    window.localStorage.setItem(TRADE_HISTORY_KEY, JSON.stringify(newHistory));
+  } catch (error) {
+    console.error("Failed to update trade note", error);
+  }
+};
+
+export const getTradeNoteById = (id: string): TradeNote | undefined => {
+  const history = getTradeHistory();
+  return history.find((note) => note.id === id);
+};

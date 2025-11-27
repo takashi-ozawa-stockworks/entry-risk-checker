@@ -10,7 +10,7 @@ export default function RiskHeader({
   const formatYen = (v: number) => `¥${v.toLocaleString()}`;
 
   return (
-    <header className="w-full mb-6">
+    <header className="sticky top-0 z-50 bg-gray-50/80 backdrop-blur-md border-b border-gray-200/50 px-4 pt-4 pb-2 mb-6 w-full">
       {/* 上段：タイトルと設定ボタン */}
       <div className="flex items-center justify-between mb-3">
         <div>
