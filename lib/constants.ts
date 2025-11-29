@@ -13,6 +13,24 @@ export const DEFAULT_SETTINGS: RiskSettings = {
 // LocalStorageのキー
 export const STORAGE_KEY = "entry_risk_checker_settings";
 export const TRADE_HISTORY_KEY = "entry_risk_checker_history";
+export const RULE_SETTINGS_KEY = "entry_risk_checker_rules";
 
 // USD/JPYにおけるpips計算用係数 (1pips = 0.01円)
 export const JPY_PIPS_MULTIPLIER = 100;
+
+export interface CurrencyPair {
+  code: string;
+  base: string;
+  quote: string;
+  isJpyQuote: boolean; // 決済通貨がJPYかどうか
+}
+
+export const CURRENCY_PAIRS: CurrencyPair[] = [
+  { code: "USD/JPY", base: "USD", quote: "JPY", isJpyQuote: true },
+  { code: "EUR/JPY", base: "EUR", quote: "JPY", isJpyQuote: true },
+  { code: "GBP/JPY", base: "GBP", quote: "JPY", isJpyQuote: true },
+  { code: "AUD/JPY", base: "AUD", quote: "JPY", isJpyQuote: true },
+  { code: "EUR/USD", base: "EUR", quote: "USD", isJpyQuote: false },
+  { code: "GBP/USD", base: "GBP", quote: "USD", isJpyQuote: false },
+  { code: "AUD/USD", base: "AUD", quote: "USD", isJpyQuote: false },
+];

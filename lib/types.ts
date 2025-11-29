@@ -15,6 +15,8 @@ export type TradeType = "LONG" | "SHORT";
 export type InputMode = "PRICE" | "PIPS";
 
 export interface TradeInput {
+  currencyPair: string; // 通貨ペアコード (例: "USD/JPY")
+  currentJpyRate?: number; // 現在の対円レート (決済通貨がJPYでない場合に使用)
   tradeType: TradeType;
   entryPrice: number; // エントリー価格
   stopLossMode: InputMode;
@@ -44,6 +46,7 @@ export interface CalculationResult {
 export interface TradeNote {
   id: string; // UUID
   timestamp: number; // 作成日時 (Unix timestamp)
+  currencyPair?: string; // 通貨ペア (後方互換性のためオプショナル)
   tradeType: TradeType;
   entryPrice: number;
   stopLossPrice: number;
@@ -57,4 +60,22 @@ export interface TradeNote {
   entryBasis?: string; // エントリー根拠
   tradeResult?: "WIN" | "LOSS"; // 結果
   note: string; // 反省・気づき
+  imageIds?: string[]; // チャート画像ID (IndexedDBのキー)
+
+  // Phase 1: Market Environment & Mental State
+  marketTrend?: "UPTREND" | "DOWNTREND" | "RANGE";
+  volatility?: "HIGH" | "MEDIUM" | "LOW";
+  timeframe?: "M15" | "M30" | "H1" | "H4" | "D1";
+  entryConfidence?: "HIGH" | "MEDIUM" | "LOW";
+  mentalState?: "CALM" | "NEUTRAL" | "ANXIOUS" | "FOMO";
+
+  // Phase 2: Trade Execution
+  ruleCompliance?: "FULL" | "PARTIAL" | "VIOLATED";
+  violatedRules?: string[];
+  complianceNotes?: string;
+
+  // Phase 3: Structured Reflection
+  whatWorked?: string;
+  whatToImprove?: string;
+  emotionalReaction?: string;
 }

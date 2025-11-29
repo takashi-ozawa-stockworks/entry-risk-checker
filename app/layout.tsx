@@ -17,6 +17,9 @@ export const metadata: Metadata = {
   description: "FXエントリー前にリスク管理を確認するツール（USD/JPY）",
 };
 
+import { PasscodeProvider } from "@/contexts/PasscodeContext";
+import PasscodeLock from "@/components/features/PasscodeLock";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -27,7 +30,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white text-slate-900`}
       >
-        <div className="min-h-screen">{children}</div>
+        <PasscodeProvider>
+          <div className="min-h-screen">{children}</div>
+          <PasscodeLock />
+        </PasscodeProvider>
       </body>
     </html>
   );

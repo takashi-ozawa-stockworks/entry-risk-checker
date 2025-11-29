@@ -76,15 +76,15 @@ export default function ResultCard({ result }: { result: CalculationResult }) {
                 isRRLow ? "text-red-600" : "text-gray-700"
               }`}
             >
-              1 : {result.riskRewardRatio.toFixed(2)}
+              1：{result.riskRewardRatio.toFixed(2)}
             </div>
           </div>
 
           {/* 損切り幅 & 利確幅 */}
           <div className="bg-white/40 p-2 rounded text-center">
-            <div className="text-sm text-gray-500 mb-1">SL幅 : TP幅</div>
+            <div className="text-sm text-gray-500 mb-1">SL幅/TP幅</div>
             <div className="font-mono font-bold text-lg text-gray-700">
-              {result.stopPips}{" : "}{result.takePips}
+              {result.stopPips}/{result.takePips}
               <span className="text-xs font-normal">(pips)</span>
             </div>
           </div>

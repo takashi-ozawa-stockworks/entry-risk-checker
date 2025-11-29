@@ -24,6 +24,13 @@ export default function RiskHeader({
 
         <div className="flex items-center gap-2">
           <Link
+            href="/analysis"
+            className="p-2.5 rounded-full bg-white text-gray-500 hover:bg-gray-100 hover:text-gray-800 transition border border-gray-200 shadow-sm active:scale-95"
+            aria-label="分析"
+          >
+            <PieChart size={20} strokeWidth={2} />
+          </Link>
+          <Link
             href="/history"
             className="p-2.5 rounded-full bg-white text-gray-500 hover:bg-gray-100 hover:text-gray-800 transition border border-gray-200 shadow-sm active:scale-95"
             aria-label="履歴"
