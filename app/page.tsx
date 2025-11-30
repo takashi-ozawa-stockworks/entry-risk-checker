@@ -16,6 +16,9 @@ export default function Page() {
   const { settings, isLoaded } = useRiskSettings();
   const [result, setResult] = useState<CalculationResult | null>(null);
   const [lastInput, setLastInput] = useState<TradeInput | null>(null);
+  const [checkedRules, setCheckedRules] = useState<Set<string>>(new Set());
+  const [myRules, setMyRules] = useState<string[]>([]);
+  const [enableMyRulesCheck, setEnableMyRulesCheck] = useState(true);
 
   // Hydration Error対策用のフラグ
   const [mounted, setMounted] = useState(false);
@@ -23,6 +26,16 @@ export default function Page() {
   // マウント（ブラウザ表示）完了後にフラグを立てる
   useEffect(() => {
     setMounted(true);
+
+    // Load My Rules settings
+    import("@/lib/rule-settings-storage").then(({ getRuleSettings }) => {
+      const ruleSettings = getRuleSettings();
+      setMyRules(ruleSettings.myRules || []);
+    });
+
+    import("@/lib/my-rules-settings").then(({ getEnableMyRulesCheck }) => {
+      setEnableMyRulesCheck(getEnableMyRulesCheck());
+    });
   }, []);
 
   const handleCalculate = (input: TradeInput) => {
@@ -30,6 +43,8 @@ export default function Page() {
     const r = calculateRisk(input, settings);
     setResult(r);
     setLastInput(input);
+    // Reset checked rules when calculating new trade
+    setCheckedRules(new Set());
     // 計算したら上までスクロールして結果を見せる
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -74,10 +89,73 @@ export default function Page() {
             {result && (
               <div className="animate-in fade-in slide-in-from-top-4 duration-300 space-y-6">
                 <ResultCard result={result} />
-                {/* エントリー禁止以外の場合にトレードノートを表示 */}
-                {lastInput && result.status !== "ENTRY_FORBIDDEN" && (
-                  <TradeNote input={lastInput} result={result} />
+
+                {/* My Rules Checklist */}
+                {enableMyRulesCheck && myRules.length > 0 && (
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div className="px-4 py-3 bg-indigo-50 border-b border-indigo-100 flex items-center justify-between">
+                      <div className="flex items-center gap-2 font-bold text-indigo-900">
+                        <span>📋</span>
+                        <span>マイルール確認</span>
+                      </div>
+                      <div className="text-xs font-bold text-indigo-600">
+                        ✅ {checkedRules.size}/{myRules.length} ルール確認済み
+                      </div>
+                    </div>
+                    <div className="p-4 space-y-2">
+                      {myRules.map((rule) => (
+                        <label
+                          key={rule}
+                          className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg cursor-pointer transition group"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checkedRules.has(rule)}
+                            onChange={(e) => {
+                              const newChecked = new Set(checkedRules);
+                              if (e.target.checked) {
+                                newChecked.add(rule);
+                              } else {
+                                newChecked.delete(rule);
+                              }
+                              setCheckedRules(newChecked);
+                            }}
+                            className="w-5 h-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                          />
+                          <span className="text-sm text-gray-700 group-hover:text-gray-900 transition">
+                            {rule}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
                 )}
+
+                {/* エントリー禁止以外の場合にトレードノートを表示 */}
+                {lastInput &&
+                  result.status !== "ENTRY_FORBIDDEN" &&
+                  (() => {
+                    const ruleCompliance =
+                      !enableMyRulesCheck || myRules.length === 0
+                        ? undefined
+                        : checkedRules.size === myRules.length
+                        ? "FULL"
+                        : "VIOLATED";
+
+                    const violatedRules =
+                      !enableMyRulesCheck || myRules.length === 0
+                        ? undefined
+                        : myRules.filter((rule) => !checkedRules.has(rule));
+
+                    return (
+                      <TradeNote
+                        input={lastInput}
+                        result={result}
+                        ruleCompliance={ruleCompliance}
+                        violatedRules={violatedRules}
+                      />
+                    );
+                  })()}
               </div>
             )}
 

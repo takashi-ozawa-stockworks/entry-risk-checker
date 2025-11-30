@@ -2,117 +2,59 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Settings,
-  ChevronLeft,
-  Save,
-  RotateCcw,
-  Lock,
-  Unlock,
-} from "lucide-react";
+import { Settings, ChevronLeft, Save, RotateCcw } from "lucide-react";
 import { useRiskSettings } from "@/hooks/useRiskSettings";
 import { RiskSettings } from "@/lib/types";
-import { usePasscode } from "@/contexts/PasscodeContext";
 
-const PasscodeSettings = () => {
-  const { hasPasscode, setPasscode, removePasscode } = usePasscode();
-  const [isEditing, setIsEditing] = useState(false);
-  const [input, setInput] = useState("");
+const MyRulesSettings = () => {
+  const [enabled, setEnabled] = useState(true);
 
-  const handleSetPasscode = async () => {
-    if (input.length === 4) {
-      await setPasscode(input);
-      setIsEditing(false);
-      setInput("");
-      alert("パスコードを設定しました");
-    }
+  useEffect(() => {
+    // Import dynamically to avoid SSR issues
+    import("@/lib/my-rules-settings").then(({ getEnableMyRulesCheck }) => {
+      setEnabled(getEnableMyRulesCheck());
+    });
+  }, []);
+
+  const handleToggle = async () => {
+    const newValue = !enabled;
+    setEnabled(newValue);
+
+    const { setEnableMyRulesCheck } = await import("@/lib/my-rules-settings");
+    setEnableMyRulesCheck(newValue);
   };
-
-  const handleRemovePasscode = async () => {
-    if (confirm("パスコードロックを解除しますか？")) {
-      await removePasscode();
-    }
-  };
-
-  if (isEditing) {
-    return (
-      <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm space-y-3">
-        <div className="text-sm font-bold text-gray-700">
-          新しいパスコードを入力
-        </div>
-        <div className="flex items-center gap-2">
-          <input
-            type="tel"
-            maxLength={4}
-            className="flex-1 min-w-0 border border-gray-200 bg-gray-50 rounded-lg px-3 py-3 text-center text-xl font-mono tracking-[0.5em] focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition text-gray-900 placeholder:text-gray-300"
-            value={input}
-            onChange={(e) => setInput(e.target.value.replace(/[^0-9]/g, ""))}
-            placeholder="0000"
-          />
-          <button
-            onClick={handleSetPasscode}
-            disabled={input.length !== 4}
-            className="px-4 py-3 bg-indigo-600 text-white rounded-lg font-bold disabled:opacity-50 whitespace-nowrap shadow-sm hover:bg-indigo-700 transition"
-          >
-            設定
-          </button>
-          <button
-            onClick={() => {
-              setIsEditing(false);
-              setInput("");
-            }}
-            className="px-3 py-3 text-gray-500 hover:bg-gray-100 rounded-lg whitespace-nowrap transition text-sm font-medium"
-          >
-            キャンセル
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200">
-      <div className="flex items-center gap-3">
-        <div
-          className={`p-2 rounded-lg ${
-            hasPasscode
-              ? "bg-green-100 text-green-600"
-              : "bg-gray-200 text-gray-500"
-          }`}
-        >
-          {hasPasscode ? <Lock size={20} /> : <Unlock size={20} />}
-        </div>
-        <div>
-          <div className="font-bold text-gray-900">パスコードロック</div>
-          <div className="text-xs text-gray-500">
-            {hasPasscode ? "設定済み" : "未設定"}
-          </div>
-        </div>
+    <div className="space-y-6">
+      <div className="flex items-center gap-2 text-gray-400 border-b border-gray-100 pb-2 mb-4 pt-2">
+        <span className="text-xs font-bold uppercase tracking-wider">
+          マイルール
+        </span>
       </div>
 
-      {hasPasscode ? (
-        <div className="flex gap-2">
-          <button
-            onClick={() => setIsEditing(true)}
-            className="px-3 py-1.5 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition"
-          >
-            変更
-          </button>
-          <button
-            onClick={handleRemovePasscode}
-            className="px-3 py-1.5 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition"
-          >
-            解除
-          </button>
+      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200">
+        <div className="flex-1">
+          <div className="font-bold text-gray-900">
+            エントリー時にマイルールを確認する
+          </div>
+          <div className="text-xs text-gray-500 mt-1">
+            OFFにすると、マイルールチェックをスキップして保存できます
+          </div>
         </div>
-      ) : (
+
         <button
-          onClick={() => setIsEditing(true)}
-          className="px-4 py-2 text-sm font-bold text-white bg-gray-900 hover:bg-gray-800 rounded-lg transition"
+          onClick={handleToggle}
+          className={`relative w-14 h-8 rounded-full transition-colors ${
+            enabled ? "bg-indigo-600" : "bg-gray-300"
+          }`}
         >
-          設定する
+          <div
+            className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow-md transition-transform ${
+              enabled ? "translate-x-7" : "translate-x-1"
+            }`}
+          />
         </button>
-      )}
+      </div>
     </div>
   );
 };
@@ -426,15 +368,8 @@ export default function SettingsPage() {
             </FieldRow>
           </div>
 
-          <div className="space-y-6">
-            <div className="flex items-center gap-2 text-gray-400 border-b border-gray-100 pb-2 mb-4 pt-2">
-              <span className="text-xs font-bold uppercase tracking-wider">
-                セキュリティ
-              </span>
-            </div>
-
-            <PasscodeSettings />
-          </div>
+          {/* My Rules Settings */}
+          <MyRulesSettings />
 
           {/* Development Tools */}
           <div className="space-y-6">

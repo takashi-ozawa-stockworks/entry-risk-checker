@@ -8,7 +8,7 @@ interface Props {
 }
 
 export default function HistoryCard({ note, onDelete }: Props) {
-  const date = new Date(note.timestamp);
+  const date = new Date(note.entryTimestamp);
   const dateStr = date.toLocaleString("ja-JP", {
     year: "numeric",
     month: "long",

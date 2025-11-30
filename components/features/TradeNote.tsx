@@ -13,9 +13,16 @@ import { JPY_PIPS_MULTIPLIER } from "@/lib/constants";
 interface Props {
   input: TradeInput;
   result: CalculationResult;
+  ruleCompliance?: "FULL" | "VIOLATED";
+  violatedRules?: string[];
 }
 
-export default function TradeNote({ input, result }: Props) {
+export default function TradeNote({
+  input,
+  result,
+  ruleCompliance,
+  violatedRules,
+}: Props) {
   const router = useRouter();
 
   // 価格の計算 (PIPSモードの場合に対応)
@@ -64,19 +71,30 @@ export default function TradeNote({ input, result }: Props) {
     const id = crypto.randomUUID();
     const newNote: TradeNoteType = {
       id,
-      timestamp: Date.now(),
+      entryTimestamp: Date.now(),
       tradeType: input.tradeType,
       entryPrice: input.entryPrice,
       stopLossPrice: slPrice,
       takeProfitPrice: tpPrice,
-      actualLoss: result.actualLoss,
-      potentialProfit: result.potentialProfit,
+      recommendedLot: result.recommendedLot,
+      expectedLoss: result.actualLoss,
+      expectedProfit: result.potentialProfit,
       stopPips: result.stopPips,
       takePips: result.takePips,
       riskRewardRatio: result.riskRewardRatio,
       currencyPair: input.currencyPair, // 保存時に追加
       note: "", // ノート機能は削除されたため空文字
+      ruleCompliance,
+      violatedRules,
     };
+
+    // Debug log
+    console.log("=== Trade Note Save Debug ===");
+    console.log("Saved Trade Note:", newNote);
+    console.log("Rule Compliance:", ruleCompliance);
+    console.log("Violated Rules:", violatedRules);
+    console.log("============================");
+
     saveTradeNote(newNote);
 
     router.push(`/history/${id}`);

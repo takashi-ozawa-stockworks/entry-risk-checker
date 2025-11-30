@@ -45,37 +45,35 @@ export interface CalculationResult {
 // 4.4 トレードノート (履歴保存用)
 export interface TradeNote {
   id: string; // UUID
-  timestamp: number; // 作成日時 (Unix timestamp)
+  entryTimestamp: number; // エントリー日時 (Unix timestamp)
   currencyPair?: string; // 通貨ペア (後方互換性のためオプショナル)
   tradeType: TradeType;
   entryPrice: number;
   stopLossPrice: number;
   takeProfitPrice: number;
-  actualLoss: number; // 負け金額
-  potentialProfit: number; // 勝ち金額
+
+  // 計画値（エントリー時の計算結果）
+  recommendedLot: number; // 推奨ロット
+  expectedLoss: number; // 想定損失
+  expectedProfit: number; // 想定利益
   stopPips?: number; // 損切り幅(pips) - オプショナルにして既存データとの互換性を保つ
   takePips?: number; // 利確幅(pips) - オプショナルにして既存データとの互換性を保つ
   riskRewardRatio: number;
-  scenario?: string; // シナリオ
-  entryBasis?: string; // エントリー根拠
-  tradeResult?: "WIN" | "LOSS"; // 結果
-  note: string; // 反省・気づき
-  imageIds?: string[]; // チャート画像ID (IndexedDBのキー)
 
-  // Phase 1: Market Environment & Mental State
-  marketTrend?: "UPTREND" | "DOWNTREND" | "RANGE";
-  volatility?: "HIGH" | "MEDIUM" | "LOW";
-  timeframe?: "M15" | "M30" | "H1" | "H4" | "D1";
-  entryConfidence?: "HIGH" | "MEDIUM" | "LOW";
-  mentalState?: "CALM" | "NEUTRAL" | "ANXIOUS" | "FOMO";
+  tradeResult?: "WIN" | "LOSS"; // 結果
+
+  // 実績値（決済後の実際の値）
+  actualLot?: number; // 実ロット数
+  actualProfit?: number; // 実利益（WIN時）
+  actualLoss?: number; // 実損失（LOSS時）
+  note: string; // 反省・気づき
+  exitTimestamp?: number; // 決済日時 (Unix timestamp)
+  exitType?: "TP_HIT" | "SL_HIT" | "MANUAL"; // 決済種別
 
   // Phase 2: Trade Execution
-  ruleCompliance?: "FULL" | "PARTIAL" | "VIOLATED";
-  violatedRules?: string[];
-  complianceNotes?: string;
+  ruleCompliance?: "FULL" | "VIOLATED";
+  violatedRules?: string[]; // 違反したルール（内部保存用、UIには表示しない）
 
   // Phase 3: Structured Reflection
-  whatWorked?: string;
-  whatToImprove?: string;
-  emotionalReaction?: string;
+  // whatWorked, whatToImprove, emotionalReaction removed in favor of single note field
 }

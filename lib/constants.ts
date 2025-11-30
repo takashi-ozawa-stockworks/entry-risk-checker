@@ -14,6 +14,8 @@ export const DEFAULT_SETTINGS: RiskSettings = {
 export const STORAGE_KEY = "entry_risk_checker_settings";
 export const TRADE_HISTORY_KEY = "entry_risk_checker_history";
 export const RULE_SETTINGS_KEY = "entry_risk_checker_rules";
+export const MY_RULES_KEY = RULE_SETTINGS_KEY;
+export const ENABLE_MY_RULES_CHECK_KEY = "entry_risk_checker_enable_my_rules";
 
 // USD/JPYにおけるpips計算用係数 (1pips = 0.01円)
 export const JPY_PIPS_MULTIPLIER = 100;

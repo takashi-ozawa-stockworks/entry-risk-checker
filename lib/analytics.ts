@@ -59,14 +59,14 @@ export const calculateSummary = (notes: TradeNote[]): AnalyticsSummary => {
 
   finishedTrades.forEach((n) => {
     if (n.tradeResult === "WIN") {
-      totalProfit += n.potentialProfit;
-      if (n.potentialProfit > maxWin) {
-        maxWin = n.potentialProfit;
+      totalProfit += n.expectedProfit;
+      if (n.expectedProfit > maxWin) {
+        maxWin = n.expectedProfit;
       }
     } else if (n.tradeResult === "LOSS") {
-      totalLoss += n.actualLoss;
-      if (Math.abs(n.actualLoss) > Math.abs(maxLoss)) {
-        maxLoss = n.actualLoss;
+      totalLoss += n.expectedLoss;
+      if (Math.abs(n.expectedLoss) > Math.abs(maxLoss)) {
+        maxLoss = n.expectedLoss;
       }
     }
   });
@@ -143,17 +143,6 @@ export const calculateByCurrency = (notes: TradeNote[]): GroupedStats[] => {
   return createGroupedStats(notes, (n) => n.currencyPair || "USD/JPY");
 };
 
-export const calculateByEntryBasis = (notes: TradeNote[]): GroupedStats[] => {
-  return createGroupedStats(notes, (n) =>
-    n.entryBasis
-      ? n.entryBasis
-          .split(",")
-          .map((s) => s.trim())
-          .filter(Boolean)
-      : ["Unlabeled"]
-  );
-};
-
 export const calculateByDayOfWeek = (notes: TradeNote[]): GroupedStats[] => {
   const days = [
     "Sunday",
@@ -166,7 +155,7 @@ export const calculateByDayOfWeek = (notes: TradeNote[]): GroupedStats[] => {
   ];
   const stats = createGroupedStats(
     notes,
-    (n) => days[new Date(n.timestamp).getDay()]
+    (n) => days[new Date(n.entryTimestamp).getDay()]
   );
 
   // Sort by day order instead of profit
@@ -175,7 +164,7 @@ export const calculateByDayOfWeek = (notes: TradeNote[]): GroupedStats[] => {
 
 export const calculateByTimeOfDay = (notes: TradeNote[]): GroupedStats[] => {
   const stats = createGroupedStats(notes, (n) => {
-    const hour = new Date(n.timestamp).getHours();
+    const hour = new Date(n.entryTimestamp).getHours();
     return `${hour.toString().padStart(2, "0")}:00`;
   });
 

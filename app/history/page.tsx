@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowLeft, History, Edit2, Trash2 } from "lucide-react";
 import { getTradeHistory, deleteTradeNote } from "@/lib/storage";
-import { deleteImage } from "@/lib/image-storage";
 import { TradeNote } from "@/lib/types";
 
 export default function HistoryPage() {
@@ -24,13 +23,7 @@ export default function HistoryPage() {
   const handleDelete = async (id: string) => {
     if (confirm("この履歴を削除してもよろしいですか？")) {
       // Find the note to get image IDs
-      const noteToDelete = history.find((n) => n.id === id);
-      if (noteToDelete?.imageIds) {
-        // Delete all associated images from IndexedDB
-        for (const imageId of noteToDelete.imageIds) {
-          await deleteImage(imageId);
-        }
-      }
+      // Find the note to get image IDs
       deleteTradeNote(id);
       setHistory(getTradeHistory());
     }
@@ -43,7 +36,7 @@ export default function HistoryPage() {
 
   // Filter logic
   const filteredHistory = history.filter((note) => {
-    const noteDate = new Date(note.timestamp);
+    const noteDate = new Date(note.entryTimestamp);
     const startDate = filterStartDate ? new Date(filterStartDate) : null;
     const endDate = filterEndDate ? new Date(filterEndDate) : null;
 
@@ -191,7 +184,7 @@ export default function HistoryPage() {
               <table className="w-full text-sm text-left min-w-[600px]">
                 <thead className="bg-gray-50 text-gray-500 font-medium border-b border-gray-200">
                   <tr>
-                    <th className="px-4 py-3 whitespace-nowrap">日時</th>
+                    <th className="px-4 py-3 whitespace-nowrap">エントリー日時</th>
                     <th className="px-4 py-3 text-center whitespace-nowrap">
                       結果
                     </th>
@@ -210,7 +203,7 @@ export default function HistoryPage() {
                   {filteredHistory.map((note) => (
                     <tr key={note.id} className="hover:bg-gray-50 transition">
                       <td className="px-4 py-3 text-gray-700 font-mono whitespace-nowrap">
-                        {new Date(note.timestamp).toLocaleString("ja-JP", {
+                        {new Date(note.entryTimestamp).toLocaleString("ja-JP", {
                           year: "numeric",
                           month: "2-digit",
                           day: "2-digit",
