@@ -26,6 +26,14 @@ export interface GroupedStats {
   netProfit: number;
 }
 
+export interface StreakStats {
+  currentStreak: number; // Positive for win streak, negative for loss streak
+  maxWinStreak: number;
+  maxLossStreak: number;
+  averageWinStreak: number;
+  averageLossStreak: number;
+}
+
 export const calculateSummary = (notes: TradeNote[]): AnalyticsSummary => {
   const finishedTrades = notes.filter((n) => n.tradeResult);
   const totalTrades = finishedTrades.length;
@@ -59,14 +67,18 @@ export const calculateSummary = (notes: TradeNote[]): AnalyticsSummary => {
 
   finishedTrades.forEach((n) => {
     if (n.tradeResult === "WIN") {
-      totalProfit += n.expectedProfit;
-      if (n.expectedProfit > maxWin) {
-        maxWin = n.expectedProfit;
+      // Use actual profit if available, otherwise expected
+      const profit = n.actualProfit ?? n.expectedProfit;
+      totalProfit += profit;
+      if (profit > maxWin) {
+        maxWin = profit;
       }
     } else if (n.tradeResult === "LOSS") {
-      totalLoss += n.expectedLoss;
-      if (Math.abs(n.expectedLoss) > Math.abs(maxLoss)) {
-        maxLoss = n.expectedLoss;
+      // Use actual loss if available, otherwise expected
+      const loss = n.actualLoss ?? n.expectedLoss;
+      totalLoss += loss;
+      if (Math.abs(loss) > Math.abs(maxLoss)) {
+        maxLoss = loss;
       }
     }
   });
@@ -170,4 +182,167 @@ export const calculateByTimeOfDay = (notes: TradeNote[]): GroupedStats[] => {
 
   // Sort by time
   return stats.sort((a, b) => a.key.localeCompare(b.key));
+};
+
+// New Analysis Functions
+
+export const calculateByRuleCompliance = (
+  notes: TradeNote[]
+): GroupedStats[] => {
+  const stats = createGroupedStats(notes, (n) => {
+    if (!n.ruleCompliance) return "Unknown";
+    if (n.ruleCompliance === "FULL") return "完全遵守";
+    if (n.ruleCompliance === "VIOLATED") {
+      const violationCount = n.violatedRules?.length || 0;
+      if (violationCount === 0) return "違反 (詳細なし)";
+      return `違反 (${violationCount}個)`;
+    }
+    return "Unknown";
+  });
+
+  // Sort: Full compliance first, then by violation count
+  return stats.sort((a, b) => {
+    if (a.key === "完全遵守") return -1;
+    if (b.key === "完全遵守") return 1;
+    return a.key.localeCompare(b.key);
+  });
+};
+
+export const calculateByRiskReward = (notes: TradeNote[]): GroupedStats[] => {
+  const stats = createGroupedStats(notes, (n) => {
+    const rr = n.riskRewardRatio || 0;
+    if (rr < 1.0) return "RR < 1.0";
+    if (rr < 1.5) return "1.0 <= RR < 1.5";
+    if (rr < 2.0) return "1.5 <= RR < 2.0";
+    return "RR >= 2.0";
+  });
+
+  // Sort by RR range
+  const order = ["RR < 1.0", "1.0 <= RR < 1.5", "1.5 <= RR < 2.0", "RR >= 2.0"];
+  return stats.sort((a, b) => order.indexOf(a.key) - order.indexOf(b.key));
+};
+
+export const calculateByHoldingTime = (notes: TradeNote[]): GroupedStats[] => {
+  const stats = createGroupedStats(notes, (n) => {
+    if (!n.exitTimestamp) return "未決済";
+    const diffMs = n.exitTimestamp - n.entryTimestamp;
+    const diffHours = diffMs / (1000 * 60 * 60);
+
+    if (diffHours < 1) return "< 1h";
+    if (diffHours < 4) return "1h - 4h";
+    if (diffHours < 12) return "4h - 12h";
+    if (diffHours < 24) return "12h - 24h";
+    return "> 24h";
+  });
+
+  const order = ["< 1h", "1h - 4h", "4h - 12h", "12h - 24h", "> 24h"];
+  return stats.sort((a, b) => order.indexOf(a.key) - order.indexOf(b.key));
+};
+
+export const calculateTopViolatedRules = (
+  notes: TradeNote[]
+): GroupedStats[] => {
+  const allViolations: string[] = [];
+  notes.forEach((n) => {
+    if (n.ruleCompliance === "VIOLATED" && n.violatedRules) {
+      allViolations.push(...n.violatedRules);
+    }
+  });
+
+  // Create stats manually since createGroupedStats expects TradeNote[]
+  const counts: Record<string, number> = {};
+  allViolations.forEach((rule) => {
+    counts[rule] = (counts[rule] || 0) + 1;
+  });
+
+  const stats: GroupedStats[] = Object.entries(counts)
+    .map(([rule, count]) => {
+      // Calculate win rate and profit for trades violating this specific rule
+      const violatingTrades = notes.filter(
+        (n) =>
+          n.ruleCompliance === "VIOLATED" && n.violatedRules?.includes(rule)
+      );
+      const summary = calculateSummary(violatingTrades);
+
+      return {
+        key: rule,
+        count,
+        winCount: summary.winCount,
+        winRate: summary.winRate,
+        netProfit: summary.netProfit,
+      };
+    })
+    .sort((a, b) => b.count - a.count) // Sort by violation count desc
+    .slice(0, 3); // Top 3
+
+  return stats;
+};
+
+export const calculateByExitType = (notes: TradeNote[]): GroupedStats[] => {
+  return createGroupedStats(notes, (n) => {
+    switch (n.exitType) {
+      case "TP_HIT":
+        return "利確 (TP)";
+      case "SL_HIT":
+        return "損切 (SL)";
+      case "MANUAL":
+        return "手動決済";
+      default:
+        return "不明";
+    }
+  });
+};
+
+export const calculateStreaks = (notes: TradeNote[]): StreakStats => {
+  // Sort by exit timestamp asc
+  const sorted = [...notes]
+    .filter((n) => n.tradeResult && n.exitTimestamp)
+    .sort((a, b) => (a.exitTimestamp || 0) - (b.exitTimestamp || 0));
+
+  let currentStreak = 0;
+  let maxWinStreak = 0;
+  let maxLossStreak = 0;
+  const winStreaks: number[] = [];
+  const lossStreaks: number[] = [];
+
+  sorted.forEach((n) => {
+    if (n.tradeResult === "WIN") {
+      if (currentStreak > 0) {
+        currentStreak++;
+      } else {
+        if (currentStreak < 0) lossStreaks.push(Math.abs(currentStreak));
+        currentStreak = 1;
+      }
+      maxWinStreak = Math.max(maxWinStreak, currentStreak);
+    } else if (n.tradeResult === "LOSS") {
+      if (currentStreak < 0) {
+        currentStreak--;
+      } else {
+        if (currentStreak > 0) winStreaks.push(currentStreak);
+        currentStreak = -1;
+      }
+      maxLossStreak = Math.max(maxLossStreak, Math.abs(currentStreak));
+    }
+  });
+
+  // Push final streak
+  if (currentStreak > 0) winStreaks.push(currentStreak);
+  if (currentStreak < 0) lossStreaks.push(Math.abs(currentStreak));
+
+  const avgWin =
+    winStreaks.length > 0
+      ? winStreaks.reduce((a, b) => a + b, 0) / winStreaks.length
+      : 0;
+  const avgLoss =
+    lossStreaks.length > 0
+      ? lossStreaks.reduce((a, b) => a + b, 0) / lossStreaks.length
+      : 0;
+
+  return {
+    currentStreak,
+    maxWinStreak,
+    maxLossStreak,
+    averageWinStreak: avgWin,
+    averageLossStreak: avgLoss,
+  };
 };

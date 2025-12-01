@@ -9,16 +9,27 @@ import {
   Calendar,
   Tag,
   LucideIcon,
+  CheckCircle2,
+  Clock,
+  Target,
+  Zap,
+  Lock,
 } from "lucide-react";
 import { getTradeHistory } from "@/lib/storage";
 import {
   calculateSummary,
   calculateByCurrency,
-  calculateByEntryBasis,
   calculateByDayOfWeek,
   calculateByTimeOfDay,
+  calculateByRuleCompliance,
+  calculateTopViolatedRules,
+  calculateByRiskReward,
+  calculateByHoldingTime,
+  calculateByExitType,
+  calculateStreaks,
   AnalyticsSummary,
   GroupedStats,
+  StreakStats,
 } from "@/lib/analytics";
 
 const StatCard = ({
@@ -38,7 +49,7 @@ const StatCard = ({
       {value}
     </div>
     {subValue && (
-      <div className="text-sm text-gray-400 mt-1 space-y-0.5">
+      <div className="text-sm text-gray-400 mt-1 space-y-0.5 text-center">
         {Array.isArray(subValue) ? (
           subValue.map((line, i) => <div key={i}>{line}</div>)
         ) : (
@@ -53,14 +64,23 @@ const StatsTable = ({
   title,
   icon: Icon,
   data,
+  isPro = false,
 }: {
   title: string;
   icon: LucideIcon;
   data: GroupedStats[];
+  isPro?: boolean;
 }) => (
-  <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+  <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden relative">
+    {isPro && (
+      <div className="absolute top-2 right-2 z-10">
+        <span className="bg-gray-900 text-white text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
+          <Lock size={10} /> Pro
+        </span>
+      </div>
+    )}
     <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex items-center gap-2 font-bold text-gray-700">
-      <Icon size={18} />
+      <Icon size={18} className={isPro ? "text-indigo-600" : ""} />
       <span>{title}</span>
     </div>
     <div className="overflow-x-auto">
@@ -81,7 +101,15 @@ const StatsTable = ({
                 {row.count}
               </td>
               <td className="px-4 py-2 text-center font-mono">
-                <span className="font-bold text-gray-700">
+                <span
+                  className={`font-bold ${
+                    row.winRate >= 50
+                      ? "text-green-600"
+                      : row.winRate >= 40
+                      ? "text-gray-700"
+                      : "text-red-600"
+                  }`}
+                >
                   {row.winRate.toFixed(1)}%
                 </span>
               </td>
@@ -108,22 +136,88 @@ const StatsTable = ({
   </div>
 );
 
+const StreakCard = ({ streaks }: { streaks: StreakStats }) => (
+  <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden relative">
+    <div className="absolute top-2 right-2 z-10">
+      <span className="bg-gray-900 text-white text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
+        <Lock size={10} /> Pro
+      </span>
+    </div>
+    <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex items-center gap-2 font-bold text-gray-700">
+      <Zap size={18} className="text-indigo-600" />
+      <span>連勝・連敗分析</span>
+    </div>
+    <div className="p-4 grid grid-cols-2 gap-4">
+      <div className="space-y-1 text-center">
+        <div className="text-xs text-gray-500 font-bold">最大連勝</div>
+        <div className="text-2xl font-black text-green-600 font-mono">
+          {streaks.maxWinStreak}
+        </div>
+        <div className="text-[10px] text-gray-400">
+          平均: {streaks.averageWinStreak.toFixed(1)}連勝
+        </div>
+      </div>
+      <div className="space-y-1 text-center">
+        <div className="text-xs text-gray-500 font-bold">最大連敗</div>
+        <div className="text-2xl font-black text-red-600 font-mono">
+          {streaks.maxLossStreak}
+        </div>
+        <div className="text-[10px] text-gray-400">
+          平均: {streaks.averageLossStreak.toFixed(1)}連敗
+        </div>
+      </div>
+      <div className="col-span-2 pt-2 border-t border-gray-100 text-center">
+        <div className="text-xs text-gray-500 mb-1">現在の状態</div>
+        <div
+          className={`font-bold text-lg ${
+            streaks.currentStreak > 0
+              ? "text-green-600"
+              : streaks.currentStreak < 0
+              ? "text-red-600"
+              : "text-gray-400"
+          }`}
+        >
+          {streaks.currentStreak > 0
+            ? `${streaks.currentStreak}連勝中 🔥`
+            : streaks.currentStreak < 0
+            ? `${Math.abs(streaks.currentStreak)}連敗中 ☔️`
+            : "なし"}
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
 export default function AnalysisPage() {
   const [mounted, setMounted] = useState(false);
   const [summary, setSummary] = useState<AnalyticsSummary | null>(null);
   const [byCurrency, setByCurrency] = useState<GroupedStats[]>([]);
-  const [byBasis, setByBasis] = useState<GroupedStats[]>([]);
   const [byDay, setByDay] = useState<GroupedStats[]>([]);
   const [byTime, setByTime] = useState<GroupedStats[]>([]);
+
+  // Advanced Stats
+  const [byCompliance, setByCompliance] = useState<GroupedStats[]>([]);
+  const [topViolatedRules, setTopViolatedRules] = useState<GroupedStats[]>([]);
+  const [byRR, setByRR] = useState<GroupedStats[]>([]);
+  const [byHolding, setByHolding] = useState<GroupedStats[]>([]);
+  const [byExit, setByExit] = useState<GroupedStats[]>([]);
+  const [streaks, setStreaks] = useState<StreakStats | null>(null);
 
   useEffect(() => {
     setMounted(true);
     const history = getTradeHistory();
     setSummary(calculateSummary(history));
     setByCurrency(calculateByCurrency(history));
-    setByBasis(calculateByEntryBasis(history));
     setByDay(calculateByDayOfWeek(history));
     setByTime(calculateByTimeOfDay(history));
+
+    // Calculate Advanced Stats
+    setByCompliance(calculateByRuleCompliance(history));
+    setTopViolatedRules(calculateTopViolatedRules(history));
+    setByRR(calculateByRiskReward(history));
+    setByHolding(calculateByHoldingTime(history));
+    setByExit(calculateByExitType(history));
+    setStreaks(calculateStreaks(history));
   }, []);
 
   if (!mounted || !summary) return <div className="min-h-screen bg-gray-50" />;
@@ -206,15 +300,65 @@ export default function AnalysisPage() {
           />
         </section>
 
-        {/* Detailed Tables */}
+        {/* Basic Stats */}
         <div className="grid md:grid-cols-2 gap-6">
           <StatsTable title="通貨ペア別" icon={TrendingUp} data={byCurrency} />
-          <StatsTable title="エントリー根拠別" icon={Tag} data={byBasis} />
+          <StatsTable title="曜日別傾向" icon={Calendar} data={byDay} />
         </div>
 
         <div className="grid md:grid-cols-2 gap-6">
-          <StatsTable title="曜日別傾向" icon={Calendar} data={byDay} />
           <StatsTable title="時間帯別傾向" icon={PieChart} data={byTime} />
+          {/* Placeholder for layout balance if needed */}
+        </div>
+
+        {/* Advanced Stats (Pro Features) */}
+        <div className="pt-4 border-t border-gray-200">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="bg-gray-900 text-white text-xs font-bold px-2 py-1 rounded-md flex items-center gap-1">
+              <Lock size={12} /> Pro Features
+            </span>
+            <span className="text-sm font-bold text-gray-500">高度な分析</span>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            <StatsTable
+              title="ルール遵守分析"
+              icon={CheckCircle2}
+              data={byCompliance}
+              isPro={true}
+            />
+            <StatsTable
+              title="最も違反しやすいルール TOP3"
+              icon={Zap}
+              data={topViolatedRules}
+              isPro={true}
+            />
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6 mt-6">
+            <StatsTable
+              title="リスクリワード別"
+              icon={Target}
+              data={byRR}
+              isPro={true}
+            />
+            <StatsTable
+              title="保有時間別"
+              icon={Clock}
+              data={byHolding}
+              isPro={true}
+            />
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6 mt-6">
+            <StatsTable
+              title="決済タイプ別"
+              icon={Tag}
+              data={byExit}
+              isPro={true}
+            />
+            {streaks && <StreakCard streaks={streaks} />}
+          </div>
         </div>
       </div>
     </main>
