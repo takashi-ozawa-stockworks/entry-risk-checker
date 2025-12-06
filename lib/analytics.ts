@@ -16,6 +16,7 @@ export interface AnalyticsSummary {
   averageRR: number;
   maxRR: number;
   minRR: number;
+  expectedValue: number;
 }
 
 export interface GroupedStats {
@@ -54,6 +55,7 @@ export const calculateSummary = (notes: TradeNote[]): AnalyticsSummary => {
       averageRR: 0,
       maxRR: 0,
       minRR: 0,
+      expectedValue: 0,
     };
   }
 
@@ -68,25 +70,29 @@ export const calculateSummary = (notes: TradeNote[]): AnalyticsSummary => {
   finishedTrades.forEach((n) => {
     if (n.tradeResult === "WIN") {
       // Use actual profit if available, otherwise expected
-      const profit = n.actualProfit ?? n.expectedProfit;
-      totalProfit += profit;
-      if (profit > maxWin) {
-        maxWin = profit;
+      const profit = n.actualProfit ?? n.expectedProfit ?? 0;
+      if (!isNaN(profit)) {
+        totalProfit += profit;
+        if (profit > maxWin) {
+          maxWin = profit;
+        }
       }
     } else if (n.tradeResult === "LOSS") {
-      // Use actual loss if available, otherwise expected
-      const loss = n.actualLoss ?? n.expectedLoss;
-      totalLoss += loss;
-      if (Math.abs(loss) > Math.abs(maxLoss)) {
-        maxLoss = loss;
+      // Use actual loss if available, otherwise expected (both are negative)
+      const loss = n.actualLoss ?? n.expectedLoss ?? 0;
+      if (!isNaN(loss)) {
+        totalLoss += loss; // loss is negative, so this decreases totalLoss
+        if (Math.abs(loss) > Math.abs(maxLoss)) {
+          maxLoss = loss; // maxLoss will be the most negative value
+        }
       }
     }
   });
 
-  const netProfit = totalProfit + totalLoss; // totalLoss is already negative
+  const netProfit = totalProfit + totalLoss; // totalLoss is negative, so this is profit - loss
   const averageProfit = winCount > 0 ? totalProfit / winCount : 0;
   const lossCount = totalTrades - winCount;
-  const averageLoss = lossCount > 0 ? Math.abs(totalLoss / lossCount) : 0; // Use absolute value
+  const averageLoss = lossCount > 0 ? totalLoss / lossCount : 0; // Keep as negative
   const profitFactor =
     totalLoss !== 0
       ? totalProfit / Math.abs(totalLoss)
@@ -100,6 +106,18 @@ export const calculateSummary = (notes: TradeNote[]): AnalyticsSummary => {
   const averageRR = totalTrades > 0 ? totalRR / totalTrades : 0;
   const maxRR = rrValues.length > 0 ? Math.max(...rrValues) : 0;
   const minRR = rrValues.length > 0 ? Math.min(...rrValues) : 0;
+
+  // Calculate Expected Value: (AvgWin * WinRate) - (AvgLoss * LossRate)
+  // Note: averageLoss is negative, so we need to subtract it (which adds its absolute value)
+  const winRateDecimal = totalTrades > 0 ? winCount / totalTrades : 0;
+  const lossRateDecimal = totalTrades > 0 ? lossCount / totalTrades : 0;
+
+  const safeAvgProfit = isNaN(averageProfit) ? 0 : averageProfit;
+  const safeAvgLoss = isNaN(averageLoss) ? 0 : averageLoss;
+
+  // averageLoss is negative, so subtracting it gives us the positive expected value formula
+  const expectedValue =
+    safeAvgProfit * winRateDecimal - safeAvgLoss * lossRateDecimal;
 
   return {
     totalTrades,
@@ -117,6 +135,7 @@ export const calculateSummary = (notes: TradeNote[]): AnalyticsSummary => {
     averageRR,
     maxRR,
     minRR,
+    expectedValue,
   };
 };
 

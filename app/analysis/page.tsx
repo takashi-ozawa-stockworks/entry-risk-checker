@@ -37,13 +37,15 @@ const StatCard = ({
   value,
   subValue,
   color = "text-gray-900",
+  hint,
 }: {
   label: string;
   value: string | number;
   subValue?: string | string[];
   color?: string;
+  hint?: string;
 }) => (
-  <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+  <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col h-full">
     <div className="text-xs font-bold text-gray-500 mb-1">{label}</div>
     <div className={`text-2xl font-black font-mono text-center ${color}`}>
       {value}
@@ -55,6 +57,11 @@ const StatCard = ({
         ) : (
           <div>{subValue}</div>
         )}
+      </div>
+    )}
+    {hint && (
+      <div className="mt-auto pt-3 text-[10px] text-gray-400 text-center border-t border-gray-50 leading-tight">
+        {hint}
       </div>
     )}
   </div>
@@ -190,6 +197,7 @@ const StreakCard = ({ streaks }: { streaks: StreakStats }) => (
 
 export default function AnalysisPage() {
   const [mounted, setMounted] = useState(false);
+  const [activeTab, setActiveTab] = useState<"basic" | "pro">("basic");
   const [summary, setSummary] = useState<AnalyticsSummary | null>(null);
   const [byCurrency, setByCurrency] = useState<GroupedStats[]>([]);
   const [byDay, setByDay] = useState<GroupedStats[]>([]);
@@ -238,57 +246,52 @@ export default function AnalysisPage() {
         </div>
       </header>
 
-      <div className="max-w-4xl mx-auto px-4 space-y-8">
-        {/* Summary Cards */}
-        <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="max-w-4xl mx-auto px-4 space-y-6">
+        {/* Tab Navigation */}
+        <div className="flex p-1 bg-gray-200/50 rounded-xl">
+          <button
+            onClick={() => setActiveTab("basic")}
+            className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all duration-200 ${
+              activeTab === "basic"
+                ? "bg-white text-gray-900 shadow-sm"
+                : "text-gray-500 hover:text-gray-700 hover:bg-gray-200/50"
+            }`}
+          >
+            Basic
+          </button>
+          <button
+            onClick={() => setActiveTab("pro")}
+            className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all duration-200 flex items-center justify-center gap-2 ${
+              activeTab === "pro"
+                ? "bg-white text-indigo-600 shadow-sm"
+                : "text-gray-500 hover:text-gray-700 hover:bg-gray-200/50"
+            }`}
+          >
+            <Lock
+              size={14}
+              className={
+                activeTab === "pro" ? "text-indigo-600" : "text-gray-400"
+              }
+            />
+            Pro Analysis
+          </button>
+        </div>
+
+        {/* Summary Cards (Always Visible) */}
+        <section className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          {/* Row 1: Key Results */}
           <StatCard
             label="勝率"
             value={`${summary.winRate.toFixed(1)}%`}
-            subValue={[
-              `${summary.totalTrades} Trades`,
-              `${summary.winCount || 0}勝 / ${summary.lossCount || 0}敗`,
-            ]}
-          />
-          <StatCard
-            label="合計損益"
-            value={`¥${summary.netProfit.toLocaleString()}`}
-            subValue={[
-              `Max Win: ¥${(summary.maxWin || 0).toLocaleString()}`,
-              `Max Loss: ¥${Math.abs(summary.maxLoss || 0).toLocaleString()}`,
-            ]}
-            color={summary.netProfit >= 0 ? "text-green-600" : "text-red-600"}
-          />
-          <StatCard
-            label="平均RR比"
-            value={`1 : ${summary.averageRR.toFixed(2)}`}
-            subValue={[
-              `Max: 1:${summary.maxRR.toFixed(2)}`,
-              `Min: 1:${summary.minRR.toFixed(2)}`,
-            ]}
-            color={
-              summary.averageRR >= 2.0
-                ? "text-green-600"
-                : summary.averageRR >= 1.5
-                ? "text-green-600"
-                : summary.averageRR >= 1.0
-                ? "text-yellow-600"
-                : "text-red-600"
-            }
+            subValue={`${summary.winCount}勝 / ${summary.lossCount}敗`}
+            hint="一般的に40〜60%あれば十分利益を出せます"
           />
           <StatCard
             label="プロフィットファクター"
-            value={`${summary.profitFactor.toFixed(2)}${
-              summary.profitFactor >= 2.0
-                ? " (優秀)"
-                : summary.profitFactor >= 1.5
-                ? " (良好)"
-                : summary.profitFactor >= 1.0
-                ? " (黒字)"
-                : " (要改善)"
-            }`}
+            value={summary.profitFactor.toFixed(2)}
             subValue={[
-              `Win: ¥${summary.totalProfit.toLocaleString()}`,
-              `Loss: ¥${Math.abs(summary.totalLoss).toLocaleString()}`,
+              `総利益: ¥${summary.totalProfit.toLocaleString()}`,
+              `総損失: ¥${Math.abs(summary.totalLoss).toLocaleString()}`,
             ]}
             color={
               summary.profitFactor >= 1.5
@@ -297,69 +300,122 @@ export default function AnalysisPage() {
                 ? "text-yellow-600"
                 : "text-red-600"
             }
+            hint="1.5以上なら優秀、1.0以上で黒字です"
+          />
+          <StatCard
+            label="合計損益"
+            value={`¥${summary.netProfit.toLocaleString()}`}
+            subValue={`${summary.totalTrades}トレード`}
+            color={summary.netProfit >= 0 ? "text-green-600" : "text-red-600"}
+          />
+
+          {/* Row 2: Analysis Metrics */}
+          <StatCard
+            label="期待値 (1トレード)"
+            value={`¥${Math.round(summary.expectedValue).toLocaleString()}`}
+            color={
+              summary.expectedValue >= 0 ? "text-green-600" : "text-red-600"
+            }
+            hint="1回エントリーするたびに平均これくらい増えます"
+          />
+          <StatCard
+            label="平均リスク (損失額)"
+            value={`¥${Math.round(
+              Math.abs(summary.averageLoss)
+            ).toLocaleString()}`}
+            hint="1回のトレードで平均これくらいのリスクを取っています"
+          />
+          <StatCard
+            label="平均RR比"
+            value={`1 : ${summary.averageRR.toFixed(2)}`}
+            color={
+              summary.averageRR >= 1.5
+                ? "text-green-600"
+                : summary.averageRR >= 1.0
+                ? "text-yellow-600"
+                : "text-red-600"
+            }
+            hint="1:1.5以上を目指すと、勝率が低くても利益が出やすくなります"
           />
         </section>
 
-        {/* Basic Stats */}
-        <div className="grid md:grid-cols-2 gap-6">
-          <StatsTable title="通貨ペア別" icon={TrendingUp} data={byCurrency} />
-          <StatsTable title="曜日別傾向" icon={Calendar} data={byDay} />
-        </div>
+        {/* Basic Tab Content */}
+        {activeTab === "basic" && (
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+            <div className="grid md:grid-cols-2 gap-6">
+              <StatsTable
+                title="通貨ペア別"
+                icon={TrendingUp}
+                data={byCurrency}
+              />
+              <StatsTable title="曜日別傾向" icon={Calendar} data={byDay} />
+            </div>
 
-        <div className="grid md:grid-cols-2 gap-6">
-          <StatsTable title="時間帯別傾向" icon={PieChart} data={byTime} />
-          {/* Placeholder for layout balance if needed */}
-        </div>
-
-        {/* Advanced Stats (Pro Features) */}
-        <div className="pt-4 border-t border-gray-200">
-          <div className="flex items-center gap-2 mb-4">
-            <span className="bg-gray-900 text-white text-xs font-bold px-2 py-1 rounded-md flex items-center gap-1">
-              <Lock size={12} /> Pro Features
-            </span>
-            <span className="text-sm font-bold text-gray-500">高度な分析</span>
+            <div className="grid md:grid-cols-2 gap-6">
+              <StatsTable title="時間帯別傾向" icon={PieChart} data={byTime} />
+            </div>
           </div>
+        )}
 
-          <div className="grid md:grid-cols-2 gap-6">
-            <StatsTable
-              title="ルール遵守分析"
-              icon={CheckCircle2}
-              data={byCompliance}
-              isPro={true}
-            />
-            <StatsTable
-              title="最も違反しやすいルール TOP3"
-              icon={Zap}
-              data={topViolatedRules}
-              isPro={true}
-            />
-          </div>
+        {/* Pro Tab Content */}
+        {activeTab === "pro" && (
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+            <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4 flex items-start gap-3">
+              <div className="p-2 bg-indigo-100 rounded-lg text-indigo-600">
+                <Zap size={20} />
+              </div>
+              <div>
+                <h3 className="font-bold text-indigo-900">
+                  Pro Analysis Features
+                </h3>
+                <p className="text-xs text-indigo-700 mt-1">
+                  より深い分析で、トレードの改善点を見つけましょう。
+                  ルール遵守率やリスクリワード比の最適化が可能です。
+                </p>
+              </div>
+            </div>
 
-          <div className="grid md:grid-cols-2 gap-6 mt-6">
-            <StatsTable
-              title="リスクリワード別"
-              icon={Target}
-              data={byRR}
-              isPro={true}
-            />
-            <StatsTable
-              title="保有時間別"
-              icon={Clock}
-              data={byHolding}
-              isPro={true}
-            />
-          </div>
+            <div className="grid md:grid-cols-2 gap-6">
+              <StatsTable
+                title="ルール遵守分析"
+                icon={CheckCircle2}
+                data={byCompliance}
+                isPro={true}
+              />
+              <StatsTable
+                title="最も違反しやすいルール TOP3"
+                icon={Zap}
+                data={topViolatedRules}
+                isPro={true}
+              />
+            </div>
 
-          <div className="grid md:grid-cols-2 gap-6 mt-6">
-            <StatsTable
-              title="決済タイプ別"
-              icon={Tag}
-              data={byExit}
-              isPro={true}
-            />
-            {streaks && <StreakCard streaks={streaks} />}
+            <div className="grid md:grid-cols-2 gap-6">
+              <StatsTable
+                title="リスクリワード別"
+                icon={Target}
+                data={byRR}
+                isPro={true}
+              />
+              <StatsTable
+                title="保有時間別"
+                icon={Clock}
+                data={byHolding}
+                isPro={true}
+              />
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-6">
+              <StatsTable
+                title="決済タイプ別"
+                icon={Tag}
+                data={byExit}
+                isPro={true}
+              />
+              {streaks && <StreakCard streaks={streaks} />}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </main>
   );

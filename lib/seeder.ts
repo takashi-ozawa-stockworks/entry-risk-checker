@@ -91,7 +91,7 @@ export const generateDummyData = () => {
       );
 
       // Planned values using user's pips value (for recommended lot size)
-      const expectedLoss = stopPips * pipsValuePerLot * recommendedLot;
+      const expectedLoss = -1 * stopPips * pipsValuePerLot * recommendedLot; // Negative value
       const expectedProfit = takePips * pipsValuePerLot * recommendedLot;
 
       // Rule compliance (80% FULL, 20% VIOLATED)
@@ -178,10 +178,10 @@ export const generateDummyData = () => {
         }
       } else {
         if (exitType === "SL_HIT") {
-          // SL hit = almost exactly as planned
+          // SL hit = almost exactly as planned (negative value)
           actualLoss = expectedLoss * randomFloat(0.98, 1.02);
         } else {
-          // Manual exit = could be better or worse
+          // Manual exit = could be better or worse (negative value)
           actualLoss = expectedLoss * randomFloat(0.8, 1.3);
         }
       }
